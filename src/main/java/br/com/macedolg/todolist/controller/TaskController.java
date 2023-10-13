@@ -3,7 +3,6 @@ package br.com.macedolg.todolist.controller;
 import br.com.macedolg.todolist.model.TaskModel;
 import br.com.macedolg.todolist.repo.iTaskRepo;
 import br.com.macedolg.todolist.utils.Utils;
-import jakarta.persistence.Id;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -51,13 +50,23 @@ public class TaskController {
     }
 
     @PutMapping("/{id}")
-    public TaskModel updateTask(@RequestBody TaskModel taskModel, HttpServletRequest request, @PathVariable UUID id) {
-        var taskSave = this.taskRepo.save(taskModel);
-
+    public ResponseEntity updateTask(@RequestBody TaskModel taskModel, HttpServletRequest request, @PathVariable UUID id) {
         var taskFind = this.taskRepo.findById(id).orElseThrow(null);
+        var idUserGet = request.getAttribute("idUser");
+
+        if (taskFind == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Tarefa não existe");
+        }
+
+        if (!taskFind.getIdUser().equals(idUserGet)) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Está tarefa não pertence ao usuário " + idUserGet);
+        }
 
         Utils.copyNonNullProperties(taskModel, taskFind);
 
-        return taskSave;
+        var taskSave = this.taskRepo.save(taskModel);
+        return ResponseEntity.ok().body(taskSave);
     }
 }
